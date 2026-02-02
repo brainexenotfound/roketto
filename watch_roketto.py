@@ -187,7 +187,7 @@ def filter_by_min_block(slots: List[Slot], min_hours: int) -> List[Slot]:
             prev = run[-1]
             prev_end_dt = dt.datetime.combine(prev.date, prev.end)
             cur_start_dt = dt.datetime.combine(slot.date, slot.start)
-            if (cur_start_dt - prev_end_dt) == dt.timedelta(hours=1):
+            if (cur_start_dt - prev_end_dt) == dt.timedelta(0):
                 run.append(slot)
             else:
                 if len(run) >= min_hours:
