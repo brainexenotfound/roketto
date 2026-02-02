@@ -21,8 +21,8 @@ This is a tiny watcher for the Roketto badminton booking site. It can be run as 
 #### Handy examples
 - Single check on a date:  
   `dist\watch_roketto.exe --once --date 2026-02-02`
-- Watch a date range, evenings, Fridays only, with Windows toast + beep:  
-  `dist\watch_roketto.exe --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --toast --beep`
+- Watch a date range, evenings, Fridays only, min 2-hour blocks:  
+  `dist\watch_roketto.exe --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --min-hours 2`
 
 #### Shortcut (double-click)
 1. Right-click `dist\watch_roketto.exe` → **Create shortcut**.  
@@ -61,7 +61,7 @@ python watch_roketto.py --once --date 2026-02-02
 python -m venv .venv
 . .venv/Scripts/activate   # PowerShell: .\\.venv\\Scripts\\Activate.ps1
 pip install -r requirements.txt
-python watch_roketto.py --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri
+python watch_roketto.py --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --min-hours 2
 ```
 
 ### Option C: build EXE yourself
@@ -89,8 +89,8 @@ pyinstaller --onefile watch_roketto.py
 #### 常用示例
 - 单次查看某天：  
   `dist\watch_roketto.exe --once --date 2026-02-02`
-- 2/10–2/20，周五晚 6–10 点监听，桌面弹窗+蜂鸣：  
-  `dist\watch_roketto.exe --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --toast --beep`
+- 2/10–2/20，周五晚 6–10 点监听（至少连续 2 小时）：  
+  `dist\watch_roketto.exe --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --min-hours 2`
 
 #### 建立双击快捷方式
 1. 右键 `dist\watch_roketto.exe` → **Create shortcut**。  
@@ -128,7 +128,7 @@ python watch_roketto.py --once --date 2026-02-02
 python -m venv .venv
 . .venv/Scripts/activate   # PowerShell: .\\.venv\\Scripts\\Activate.ps1
 pip install -r requirements.txt
-python watch_roketto.py --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri
+python watch_roketto.py --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --min-hours 2
 ```
 
 ### 方案 C：自行打包 EXE
@@ -139,10 +139,11 @@ pyinstaller --onefile watch_roketto.py
 
 ---
 ## Quick Option Hints
-- `--date YYYY-MM-DD` 单日 / single day.
-- `--start-date ... --end-date ...` 日期范围（必须成对）。
-- `--from-time HH:MM` 最早；`--to-time HH:MM` 最晚（不含）；`--weekday fri` 限定周五。
-- `--toast` Windows 弹窗；`--beep` 蜂鸣；`--webhook-url https://...` 推送到 Slack/Discord。
-- 默认每 180 秒查询一次并带抖动，避免对网站造成压力。
+- `--date YYYY-MM-DD` single day / 单日
+- `--start-date ... --end-date ...` date range (pair required) / 日期范围（必须成对）
+- `--from-time HH:MM` earliest; `--to-time HH:MM` latest (exclusive); `--weekday fri` limit to Friday / 最早最晚时间、限定星期几
+- `--min-hours N` require N consecutive hours on the same court/date (default 1) / 要求连续 N 小时（默认 1）
+- Notifications are console-only now (no toast/beep) / 现在仅控制台输出（移除弹窗/蜂鸣）
+- Default polling every 180s with jitter to stay polite / 默认 180 秒轮询并带抖动，避免对站点造成压力
 
 If something looks wrong, increase `--interval` (e.g., 300–420), keep `--jitter` on, and try a single check with `--once` to confirm it works. Happy hitting!

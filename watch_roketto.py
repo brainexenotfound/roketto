@@ -6,7 +6,7 @@ Features
 - Polls the public calendar widget HTML (same as the browser) with a persisted session.
 - You can watch a single date/time or a date range with optional time windows or weekdays.
 - Safe polling defaults (3 minutes + jitter) to avoid triggering DDoS protection.
-- Notifies via console; optional Windows toast, beep, or generic webhook.
+- Console-only notifications (one concise summary per polling cycle to avoid OS toast issues).
 
 This script is intentionally dependency‑light and avoids browser automation.
 """
@@ -28,17 +28,6 @@ try:
     from zoneinfo import ZoneInfo  # Python 3.9+
 except ImportError:  # pragma: no cover
     from backports.zoneinfo import ZoneInfo  # type: ignore
-
-# Optional niceties; guarded imports keep them optional.
-try:  # Windows toast
-    from win10toast import ToastNotifier
-except Exception:
-    ToastNotifier = None  # type: ignore
-
-try:  # Simple beep on Windows
-    import winsound
-except Exception:
-    winsound = None  # type: ignore
 
 
 SHOW_URL = (
@@ -173,20 +162,49 @@ def slot_matches(slot: Slot, args: argparse.Namespace) -> bool:
     return True
 
 
-def notify(slot: Slot, msg: str, args: argparse.Namespace) -> None:
-    print(msg, flush=True)
-    if args.beep and winsound:
-        winsound.MessageBeep()
-    if args.toast and ToastNotifier:
-        try:
-            ToastNotifier().show_toast("Roketto slot found", msg, duration=8, threaded=True)
-        except Exception:
-            pass
-    if args.webhook_url:
-        try:
-            requests.post(args.webhook_url, json={"text": msg}, timeout=8)
-        except Exception as exc:
-            print(f"[warn] Webhook failed: {exc}", file=sys.stderr)
+def filter_by_min_block(slots: List[Slot], min_hours: int) -> List[Slot]:
+    """
+    Keep only slots that begin a consecutive available block of at least min_hours.
+    Slots are 1-hour increments in the calendar; we look for sequential hours on the same court and date.
+    """
+    if min_hours <= 1:
+        return slots
+
+    result: List[Slot] = []
+    # Group by (resource_id, date)
+    by_group: dict[tuple[str, dt.date], List[Slot]] = {}
+    for s in slots:
+        by_group.setdefault((s.resource_id, s.date), []).append(s)
+
+    for (_, _), group in by_group.items():
+        group_sorted = sorted(group, key=lambda s: s.start)
+        # Find runs of consecutive hours
+        run: List[Slot] = []
+        for slot in group_sorted:
+            if not run:
+                run = [slot]
+                continue
+            prev = run[-1]
+            prev_end_dt = dt.datetime.combine(prev.date, prev.end)
+            cur_start_dt = dt.datetime.combine(slot.date, slot.start)
+            if (cur_start_dt - prev_end_dt) == dt.timedelta(hours=1):
+                run.append(slot)
+            else:
+                if len(run) >= min_hours:
+                    result.append(run[0])
+                run = [slot]
+        if run and len(run) >= min_hours:
+            result.append(run[0])
+    return result
+
+
+def notify_summary(new_slots: List[Slot], local_tz: ZoneInfo, site_tz: ZoneInfo) -> None:
+    """Print a concise summary when new slots are found."""
+    if not new_slots:
+        return
+    print(f"Found {len(new_slots)} new slot(s):", flush=True)
+    for slot in new_slots:
+        print(f"  - {format_slot(slot, local_tz, site_tz)}", flush=True)
 
 
 def format_slot(slot: Slot, local_tz: ZoneInfo, site_tz: ZoneInfo) -> str:
@@ -250,12 +268,13 @@ def main() -> None:
         help="Random jitter (+/- seconds) added to interval to avoid patterns (default: 25).",
     )
     parser.add_argument("--once", action="store_true", help="Run a single check and exit.")
-    parser.add_argument("--beep", action="store_true", help="Play a short beep on Windows.")
-    parser.add_argument("--toast", action="store_true", help="Windows toast notification.")
     parser.add_argument(
-        "--webhook-url",
-        help="Optional POST webhook (Slack/Discord/etc). Sends JSON {text: msg}.",
+        "--min-hours",
+        type=int,
+        default=1,
+        help="Minimum consecutive hours on the same court/date to notify (default: 1).",
     )
+    # Notifications simplified to console output only (toast/beep removed for stability).
     parser.add_argument(
         "--site-tz",
         default="Australia/Sydney",
@@ -289,6 +308,8 @@ def main() -> None:
             f"Time window: {args.time_from.strftime('%H:%M') if args.time_from else 'any'}"
             f" to {args.time_to.strftime('%H:%M') if args.time_to else 'any'}"
         )
+    if args.min_hours > 1:
+        print(f"Minimum consecutive hours: {args.min_hours}")
     if args.interval < 90:
         print("[warn] Interval < 90s may annoy the site; consider raising it.", file=sys.stderr)
 
@@ -298,15 +319,20 @@ def main() -> None:
 
     while True:
         try:
+            matched_slots: List[Slot] = []
             for d in dates:
                 slots, session = fetch_slots_for_date(session, d)
                 for slot in slots:
                     if slot.key in seen:
                         continue
                     if slot_matches(slot, args):
-                        msg = f"Slot available: {format_slot(slot, local_tz, site_tz)}"
-                        notify(slot, msg, args)
-                        seen.add(slot.key)
+                        matched_slots.append(slot)
+            # Apply min-block filter across all matched slots
+            filtered_slots = filter_by_min_block(matched_slots, args.min_hours)
+            for s in filtered_slots:
+                seen.add(s.key)
+            if filtered_slots:
+                notify_summary(filtered_slots, local_tz, site_tz)
             consecutive_errors = 0
         except Exception as exc:
             consecutive_errors += 1
