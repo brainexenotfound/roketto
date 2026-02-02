@@ -1,149 +1,187 @@
-# Roketto Badminton Slot Watcher / 场次监控工具
+# Roketto Badminton Slot Watcher / 羽毛球场次监控工具
 
-This is a tiny watcher for the Roketto badminton booking site. It can be run as a **standalone EXE** (no Python knowledge needed). English and Chinese instructions are included below.
+A lightweight, dependency-light tool to monitor court availability at the Roketto badminton booking site. It checks the public calendar for open slots and notifies you on the command line.
 
----
-## English: Get & Run (No Coding Needed)
-
-### 1) Download the files
-- If on GitHub: click the green **Code** button → **Download ZIP**, then unzip (e.g., to `C:\Users\<you>\Downloads\roketto`).
-- If you already have the folder, just open it in File Explorer.
-
-### 2) Run the standalone app
-1. Open the `dist` folder inside `roketto`.
-2. Double-click `watch_roketto.exe`. A black window opens (that’s normal).
-3. Type a command and press Enter, for example:
-   ```
-   dist\watch_roketto.exe --once --date 2026-02-02
-   ```
-4. Leave the window open to keep watching. Close it to stop.
-
-#### Handy examples
-- Single check on a date:  
-  `dist\watch_roketto.exe --once --date 2026-02-02`
-- Watch a date range, evenings, Fridays only, min 2-hour blocks:  
-  `dist\watch_roketto.exe --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --min-hours 2`
-
-#### Shortcut (double-click)
-1. Right-click `dist\watch_roketto.exe` → **Create shortcut**.  
-2. Right-click the shortcut → **Properties** → in **Target**, append your options, e.g.  
-   `"C:\Users\<you>\Downloads\roketto\dist\watch_roketto.exe" --once --date 2026-02-02`  
-3. Double-click the shortcut to run with those options.
-
-### 3) If `watch_roketto.exe` is missing (build it yourself)
-You only need to do this once; afterwards share the EXE with friends.
-```
-pip install pyinstaller
-pyinstaller --onefile watch_roketto.py
-```
-The file appears at `dist/watch_roketto.exe`.
+这是一个轻量级、低依赖的工具，用于监控 Roketto 羽毛球馆的场地预订情况。它会检查公开的日历，并在命令行中通知您可用的时间段。
 
 ---
-## For Coders: Run from Source (conda or venv)
 
-### Clone / download
-```bash
-git clone <repo-url> roketto
-cd roketto
-# or download ZIP and unzip here
+## English Instructions
+
+This tool can be used by anyone, with or without programming experience.
+
+### For Non-Coders: How to Use
+
+#### 1. Download the Tool
+- If you see a green **`< > Code`** button on this page, click it and select **Download ZIP**.
+- Unzip the downloaded file to a memorable location (e.g., your `Downloads` folder).
+
+#### 2. Run the Watcher
+The watcher runs in a terminal window. You give it commands to tell it what dates and times you're interested in.
+
+1.  Open the folder where you unzipped the files.
+2.  You should find a file named `watch_roketto.py`.
+3.  You will need to run it from your terminal. On Windows, you can open the Command Prompt (search for `cmd` in the Start Menu) or PowerShell.
+4.  Navigate to the directory where you saved the files. For example:
+    ```sh
+    cd C:\Users\YourName\Downloads\roketto
+    ```
+5.  Before running, you need to install the dependencies. Run this command once:
+    ```sh
+    pip install -r requirements.txt
+    ```
+    If `pip` is not found, you may need to [install Python](https://www.python.org/downloads/).
+6.  Now, run the watcher with your desired options.
+
+#### Examples
+- To check for any available slots on February 28, 2026, just once:
+  ```sh
+  python watch_roketto.py --date 2026-02-28 --once
+  ```
+
+- To continuously watch for slots on Friday evenings between 6 PM and 10 PM for the next 7 days:
+  ```sh
+  python watch_roketto.py --weekday fri --from-time 18:00 --to-time 22:00
+  ```
+
+- To watch for a 2-hour consecutive block on weekends in March 2026:
+  ```sh
+  python watch_roketto.py --start-date 2026-03-01 --end-date 2026-03-31 --weekday sat --weekday sun --min-hours 2
+  ```
+
+When a slot is found, it will print a message like this:
+```
+Found 1 new slot(s):
+  - Court 1: 2026-02-28 19:00–20:00 (local: Fri 2026-02-28 07:00 PM EST)
 ```
 
-### Option A: conda
-```bash
-conda create -n roketto-bot python=3.11 pip
-conda activate roketto-bot
-pip install -r requirements.txt
-python watch_roketto.py --once --date 2026-02-02
-```
+Leave the terminal window open to keep watching. **To stop, close the window or press `Ctrl+C`**.
 
-### Option B: plain venv
-```bash
-python -m venv .venv
-. .venv/Scripts/activate   # PowerShell: .\\.venv\\Scripts\\Activate.ps1
-pip install -r requirements.txt
-python watch_roketto.py --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --min-hours 2
-```
+### For Coders: How to Use
 
-### Option C: build EXE yourself
-```bash
-pip install pyinstaller
-pyinstaller --onefile watch_roketto.py
-```
+1.  Clone or download the repository.
+2.  It's recommended to use a virtual environment.
+    ```sh
+    # Create and activate a virtual environment
+    python -m venv .venv
+    # On Windows
+    .venv\Scripts\activate
+    # On macOS/Linux
+    source .venv/bin/activate
+    ```
+3.  Install dependencies:
+    ```sh
+    pip install -r requirements.txt
+    ```
+4.  Run the script with desired arguments. See the options table below for details.
+    ```sh
+    python watch_roketto.py --help
+    ```
+
+### Command-Line Options
+
+| Option | Argument | Description |
+| :--- | :--- | :--- |
+| `--date` | `YYYY-MM-DD` | Watch a single specific date. |
+| `--start-date`| `YYYY-MM-DD` | Start of a date range to watch. Must be used with `--end-date`. |
+| `--end-date` | `YYYY-MM-DD` | End of a date range to watch. Must be used with `--start-date`. |
+| `--days-ahead`| `N` | Watch for the next `N` days. Defaults to 7. |
+| `--time` | `HH:MM` | Match an exact start time. |
+| `--from-time` | `HH:MM` | The earliest start time to match. |
+| `--to-time` | `HH:MM` | The latest start time to match (exclusive). |
+| `--weekday` | `mon`...`sun`| Restrict the search to a specific day of the week. Can be used multiple times. |
+| `--min-hours` | `N` | Find slots with at least `N` consecutive hours available on the same court. Default is 1. |
+| `--interval` | `Seconds` | How often to check for availability in seconds. Default is 180. |
+| `--jitter` | `Seconds` | Adds randomness to the interval to avoid detection. Default is 25. |
+| `--once` | (none) | Run the check only one time and exit. |
 
 ---
-## 中文：下载与运行（零编程）
 
-### 1) 获取文件
-- 如果在 GitHub：点击绿色 **Code** → **Download ZIP**，解压到任意文件夹（如 `C:\Users\<你>\Downloads\roketto`）。
-- 已经有文件夹的话，直接打开即可。
+## 中文说明
 
-### 2) 运行独立程序
-1. 打开 `roketto` 里的 `dist` 文件夹。
-2. 双击 `watch_roketto.exe`，会弹出黑色窗口（正常现象）。
-3. 在窗口里输入命令并回车，例如：
-   ```
-   dist\watch_roketto.exe --once --date 2026-02-02
-   ```
-4. 需要持续监听就让窗口保持打开，关闭窗口即停止。
+本工具适用于所有用户，无论您有无编程经验。
 
-#### 常用示例
-- 单次查看某天：  
-  `dist\watch_roketto.exe --once --date 2026-02-02`
-- 2/10–2/20，周五晚 6–10 点监听（至少连续 2 小时）：  
-  `dist\watch_roketto.exe --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --min-hours 2`
+### 为非程序员设计：如何使用
 
-#### 建立双击快捷方式
-1. 右键 `dist\watch_roketto.exe` → **Create shortcut**。  
-2. 右键快捷方式 → **属性** → 在 “目标” 后加上参数，例如  
-   `"C:\Users\<你>\Downloads\roketto\dist\watch_roketto.exe" --once --date 2026-02-02`  
-3. 双击快捷方式即可按预设参数运行。
+#### 1. 下载工具
+- 如果您在此页面上看到一个绿色的 **`< > Code`** 按钮，请点击它，然后选择 **Download ZIP**。
+- 将下载的 ZIP 文件解压到一个您记得住的位置（例如，您的 `下载` 文件夹）。
 
-### 3) 没有 EXE 时自行打包（只做一次）
+#### 2. 运行监控脚本
+监控器在一个终端窗口中运行。您通过命令告诉它您感兴趣的日期和时间。
+
+1.  打开您解压文件的文件夹。
+2.  您应该能找到一个名为 `watch_roketto.py` 的文件。
+3.  您需要从终端运行它。在 Windows 上，您可以打开命令提示符（在开始菜单中搜索 `cmd`）或 PowerShell。
+4.  导航到您保存文件的目录。例如：
+    ```sh
+    cd C:\Users\您的用户名\Downloads\roketto
+    ```
+5.  在运行之前，您需要安装依赖项。运行一次此命令：
+    ```sh
+    pip install -r requirements.txt
+    ```
+    如果找不到 `pip`，您可能需要[安装 Python](https://www.python.org/downloads/)。
+6.  现在，使用您想要的选项运行监控器。
+
+#### 示例
+- 只检查一次 2026 年 2 月 28 日是否有空场：
+  ```sh
+  python watch_roketto.py --date 2026-02-28 --once
+  ```
+
+- 在接下来的 7 天内，持续监控周五晚上 6 点到 10 点的场次：
+  ```sh
+  python watch_roketto.py --weekday fri --from-time 18:00 --to-time 22:00
+  ```
+
+- 监控 2026 年 3 月的周末，要求至少有连续 2 小时的空场：
+  ```sh
+  python watch_roketto.py --start-date 2026-03-01 --end-date 2026-03-31 --weekday sat --weekday sun --min-hours 2
+  ```
+
+当找到空场时，它会打印如下消息：
 ```
-pip install pyinstaller
-pyinstaller --onefile watch_roketto.py
-```
-生成的文件在 `dist\watch_roketto.exe`，可直接分享给朋友。
-
----
-## 给开发者：源代码运行（conda 或 venv）
-
-### 获取代码
-```bash
-git clone <repo-url> roketto
-cd roketto
-# 或下载 ZIP 解压
-```
-
-### 方案 A：conda
-```bash
-conda create -n roketto-bot python=3.11 pip
-conda activate roketto-bot
-pip install -r requirements.txt
-python watch_roketto.py --once --date 2026-02-02
+Found 1 new slot(s):
+  - Court 1: 2026-02-28 19:00–20:00 (local: Fri 2026-02-28 07:00 PM EST)
 ```
 
-### 方案 B：原生 venv
-```bash
-python -m venv .venv
-. .venv/Scripts/activate   # PowerShell: .\\.venv\\Scripts\\Activate.ps1
-pip install -r requirements.txt
-python watch_roketto.py --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --min-hours 2
-```
+保持终端窗口打开以继续监控。**要停止，请关闭窗口或按 `Ctrl+C`**。
 
-### 方案 C：自行打包 EXE
-```bash
-pip install pyinstaller
-pyinstaller --onefile watch_roketto.py
-```
+### 为程序员设计：如何使用
 
----
-## Quick Option Hints
-- `--date YYYY-MM-DD` single day / 单日
-- `--start-date ... --end-date ...` date range (pair required) / 日期范围（必须成对）
-- `--from-time HH:MM` earliest; `--to-time HH:MM` latest (exclusive); `--weekday fri` limit to Friday / 最早最晚时间、限定星期几
-- `--min-hours N` require N consecutive hours on the same court/date (default 1) / 要求连续 N 小时（默认 1）
-- Notifications are console-only now (no toast/beep) / 现在仅控制台输出（移除弹窗/蜂鸣）
-- Default polling every 180s with jitter to stay polite / 默认 180 秒轮询并带抖动，避免对站点造成压力
+1.  克隆或下载此代码库。
+2.  建议使用虚拟环境。
+    ```sh
+    # 创建并激活虚拟环境
+    python -m venv .venv
+    # 在 Windows 上
+    .venv\Scripts\activate
+    # 在 macOS/Linux 上
+    source .venv/bin/activate
+    ```
+3.  安装依赖：
+    ```sh
+    pip install -r requirements.txt
+    ```
+4.  使用所需的参数运行脚本。详细信息请参见下方的选项表。
+    ```sh
+    python watch_roketto.py --help
+    ```
 
-If something looks wrong, increase `--interval` (e.g., 300–420), keep `--jitter` on, and try a single check with `--once` to confirm it works. Happy hitting!
+### 命令行选项
+
+| 选项 | 参数 | 描述 |
+| :--- | :--- | :--- |
+| `--date` | `YYYY-MM-DD` | 监控一个特定的日期。 |
+| `--start-date`| `YYYY-MM-DD` | 要监控的日期范围的开始。必须与 `--end-date` 一起使用。 |
+| `--end-date` | `YYYY-MM-DD` | 要监控的日期范围的结束。必须与 `--start-date` 一起使用。 |
+| `--days-ahead`| `N` | 监控未来 `N` 天。默认为 7。 |
+| `--time` | `HH:MM` | 匹配确切的开始时间。 |
+| `--from-time` | `HH:MM` | 要匹配的最早开始时间。 |
+| `--to-time` | `HH:MM` | 要匹配的最晚开始时间（不含）。 |
+| `--weekday` | `mon`...`sun`| 将搜索限制在特定的星期几。可多次使用。 |
+| `--min-hours` | `N` | 查找在同一球场上至少有 `N` 个连续小时的空场。默认为 1。 |
+| `--interval` | `秒` | 每隔多少秒检查一次可用性。默认为 180。 |
+| `--jitter` | `秒` | 为检查间隔增加随机性，以避免被网站屏蔽。默认为 25。 |
+| `--once` | (无) | 只运行一次检查然后退出。 |
