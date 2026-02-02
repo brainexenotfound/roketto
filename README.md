@@ -1,114 +1,119 @@
-# Roketto Badminton Slot Watcher
+# Roketto Badminton Slot Watcher / 场次监控工具
 
-Light‑weight Python tool that watches the public Roketto booking page and alerts you when a court becomes available. It mimics the same endpoints the browser uses—no Selenium needed—and keeps requests polite to avoid triggering site defences.
+Light‑weight Python tool that watches the public Roketto booking page and alerts you when a court becomes available. 下方附中文指南，方便不熟悉 conda 的用户。
 
-## Quick Start (Anaconda)
+---
+## Quick Start (English)
 
+### With conda
 ```bash
 conda create -n roketto-bot python=3.11 pip
 conda activate roketto-bot
 pip install -r requirements.txt
 ```
 
-Run a single check:
-
+Single check:
 ```bash
 python watch_roketto.py --once --date 2026-02-02
 ```
 
-Watch a range with filters:
-
+Watch range with filters:
 ```bash
-# Fridays between 6–10pm from Feb 10–20 (venue time)
 python watch_roketto.py \
   --start-date 2026-02-10 --end-date 2026-02-20 \
   --from-time 18:00 --to-time 22:00 \
   --weekday fri --toast --beep
 ```
 
-## Command Reference
-
-- `--date YYYY-MM-DD` — single day to watch.
-- `--start-date YYYY-MM-DD --end-date YYYY-MM-DD` — inclusive range (both required).
-- `--days-ahead N` — watch the next N days when no dates are supplied (default 7).
-- Time filters:
-  - `--time HH:MM` exact start time.
-  - `--from-time HH:MM` earliest start.
-  - `--to-time HH:MM` latest start (exclusive).
-- `--weekday mon|tue|wed|thu|fri|sat|sun` — limit to a weekday.
-- `--interval SECONDS` — base poll interval (default 180s, minimum enforced 30s).
-- `--jitter SECONDS` — random ± jitter to avoid patterns (default 25s).
-- `--once` — single pass then exit.
-- Notifications:
-  - `--toast` Windows toast (needs win10toast).
-  - `--beep` short Windows chime.
-  - `--webhook-url https://...` POSTs `{ "text": msg }` for Slack/Discord/etc.
-- Time zones:
-  - `--site-tz` venue time zone (default `Australia/Sydney`).
-  - `--local-tz` your time zone for display; defaults to system zone.
-
-## How It Works (brief)
-
-1) Opens the public booking page to seed a session.  
-2) Calls `/secure/customer/booking/v1/public/calendar-widget?date=YYYYMMDD`.  
-3) Parses table cells with class `available` and extracts start/end times from the `toggleBooking(...)` handler.  
-4) Applies your filters and notifies once per new slot.
-
-## Running Without Conda
-
+### Without conda (plain venv)
 ```bash
 python -m venv .venv
-. .venv/Scripts/activate  # Windows PowerShell: .\\.venv\\Scripts\\Activate.ps1
+. .venv/Scripts/activate   # PowerShell: .\\.venv\\Scripts\\Activate.ps1
 pip install -r requirements.txt
 ```
 
-## Building a Single Executable (Windows)
-
+### Pack single EXE (Windows)
 ```bash
 pip install pyinstaller
 pyinstaller --onefile watch_roketto.py
-# Share dist/watch_roketto.exe
+# exe at dist/watch_roketto.exe
 ```
 
-## Common Issues & Troubleshooting
+## Commands (English)
+- `--date YYYY-MM-DD` single day.
+- `--start-date ... --end-date ...` inclusive range (both required).
+- `--days-ahead N` default 7 when no dates.
+- Time: `--time HH:MM` exact; `--from-time`; `--to-time` (exclusive).
+- `--weekday mon|tue|wed|thu|fri|sat|sun`
+- `--interval` seconds (default 180) + `--jitter` (default 25).
+- Notifications: `--toast`, `--beep`, `--webhook-url https://...`
+- TZ: `--site-tz` (default Australia/Sydney); `--local-tz` for display.
+- `--once` run one pass.
 
-- **“Expected session attribute 'BookingFormV1'”**  
-  Session expired. The script auto-reseeds; if it repeats, increase `--interval` and ensure network is stable.
+## How it works
+Seeds a session on the public page, fetches `/calendar-widget?date=YYYYMMDD`, parses `td.available` slots, filters, and notifies once per new slot.
 
-- **No slots ever found**  
-  Verify your time filters aren’t too narrow; try `--once --date YYYY-MM-DD` with no time filters to confirm parsing works.
+## Troubleshooting
+- “Expected session attribute 'BookingFormV1'”: session expired; auto‑reseed; if repeated, increase `--interval`.
+- No slots: loosen time filters; try `--once --date ...` without filters.
+- 403/blocked: lower frequency (e.g., 300–420s) keep jitter.
+- Toast/beep: Windows only; ensure `win10toast` installed.
+- Webhook silent: POST test with curl; some hooks need auth/fields.
+- Timezone: set `--local-tz America/Los_Angeles` if system TZ is off.
+- Repeats: dedupe per resource+date+start; restarting will re-announce.
 
-- **Blocked or 403 responses**  
-  Reduce polling: raise `--interval` (e.g., 300–420s) and keep `--jitter` enabled.
+## Safe use
+Keep intervals generous (≥180s) with jitter, stop when not needed, avoid multiple high-frequency instances.
 
-- **Toast/beep not working**  
-  Only available on Windows. Ensure `win10toast` installed (`pip install win10toast`) and run inside a user session (not as a service).
+## Examples
+- Evenings next 7 days:  
+  `python watch_roketto.py --days-ahead 7 --from-time 17:00 --to-time 22:00 --toast`
+- One-off before heading out:  
+  `python watch_roketto.py --once --date 2026-02-03 --from-time 18:00 --to-time 21:00`
 
-- **Webhook silent**  
-  Test with `curl -X POST -H "Content-Type: application/json" -d '{"text":"test"}' <your webhook>`; some endpoints require authentication or different JSON keys.
+---
+## 中文快速指南（不懂 conda 也能用）
 
-- **Timezone confusion**  
-  Messages show venue time plus your local time. Set `--local-tz` explicitly (e.g., `America/Los_Angeles`) if your system timezone is incorrect.
+1. 安装 Python 3.11（Windows 勾选 “Add Python to PATH”）。  
+2. 在项目目录打开 PowerShell 或 CMD：
+   ```bash
+   python -m venv .venv
+   .\\.venv\\Scripts\\activate      # PowerShell 可用 .\\.venv\\Scripts\\Activate.ps1
+   pip install -r requirements.txt
+   ```
+3. 试跑一次（单日、检查一次就退出）：
+   ```bash
+   python watch_roketto.py --once --date 2026-02-02
+   ```
+4. 持续监听示例（2/10–2/20，周五晚 6–10 点，桌面弹窗+蜂鸣）：
+   ```bash
+   python watch_roketto.py ^
+     --start-date 2026-02-10 --end-date 2026-02-20 ^
+     --from-time 18:00 --to-time 22:00 ^
+     --weekday fri --toast --beep
+   ```
 
-- **Too many repeats**  
-  The script dedupes by resource + date + start time. If you restart, it will announce slots again; run continuously to avoid repeat alerts.
+### 常用参数（中文速查）
+- 日期：`--date` 单日；或 `--start-date ... --end-date ...` 范围；未指定则 `--days-ahead` 默认 7 天。
+- 时间：`--time` 精确；`--from-time` 最早；`--to-time` 最晚（不含）。`--weekday` 限定星期几。
+- 频率：`--interval` 基础间隔（秒，默认 180），`--jitter` 抖动（默认 ±25）。
+- 通知：`--toast` 桌面弹窗；`--beep` 蜂鸣；`--webhook-url` 推送到 Slack/Discord 等。
+- 时区：`--site-tz` 场馆时区（默认 Australia/Sydney）；`--local-tz` 显示你的本地时间。
+- `--once` 只跑一遍。
 
-## Safe-Use Tips
+### 常见问题
+- **“Expected session attribute 'BookingFormV1'”**：会话过期，脚本会重建；频繁出现请增大 `--interval`。
+- **找不到场次**：先不用时间过滤跑一次确认解析正常。
+- **403/被怀疑机器人**：降低频率，增大间隔并保留抖动。
+- **Toast/Beep 无响应**：仅 Windows 支持，确保 `win10toast` 安装且在桌面会话内运行。
+- **Webhook 没消息**：用 curl 先测试；有些需要鉴权或特定字段。
+- **时区显示不对**：显式设置 `--local-tz`。
 
-- Keep `--interval` generous (>=180s) and `--jitter` on to stay polite to the site.
-- Run only during the window you actually need; stop the watcher when you’re not looking for a slot.
-- Avoid running multiple instances with the same account/IP to minimize load.
-
-## Example: Daily Watch for Next Week, Evenings Only
-
+### 打包成单文件 EXE
 ```bash
-python watch_roketto.py --days-ahead 7 --from-time 17:00 --to-time 22:00 --toast
+pip install pyinstaller
+pyinstaller --onefile watch_roketto.py
+# 生成 dist/watch_roketto.exe，可直接双击或命令行运行
 ```
 
-## Example: Single Check Before Heading Out
-
-```bash
-python watch_roketto.py --once --date 2026-02-03 --from-time 18:00 --to-time 21:00
-```
-
-Happy hitting!
+保持较长间隔、开启抖动，避免对站点造成压力。祝你顺利抢到场地！
