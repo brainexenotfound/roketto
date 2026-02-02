@@ -1,0 +1,4 @@
+requests>=2.31.0
+beautifulsoup4>=4.12.2
+tzdata>=2023.4    # needed for reliable zoneinfo on Windows
+win10toast>=0.9   # optional; enable with --toast on Windows
