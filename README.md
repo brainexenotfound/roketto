@@ -1,119 +1,148 @@
 # Roketto Badminton Slot Watcher / 场次监控工具
 
-Light‑weight Python tool that watches the public Roketto booking page and alerts you when a court becomes available. 下方附中文指南，方便不熟悉 conda 的用户。
+This is a tiny watcher for the Roketto badminton booking site. It can be run as a **standalone EXE** (no Python knowledge needed). English and Chinese instructions are included below.
 
 ---
-## Quick Start (English)
+## English: Get & Run (No Coding Needed)
 
-### With conda
+### 1) Download the files
+- If on GitHub: click the green **Code** button → **Download ZIP**, then unzip (e.g., to `C:\Users\<you>\Downloads\roketto`).
+- If you already have the folder, just open it in File Explorer.
+
+### 2) Run the standalone app
+1. Open the `dist` folder inside `roketto`.
+2. Double-click `watch_roketto.exe`. A black window opens (that’s normal).
+3. Type a command and press Enter, for example:
+   ```
+   dist\watch_roketto.exe --once --date 2026-02-02
+   ```
+4. Leave the window open to keep watching. Close it to stop.
+
+#### Handy examples
+- Single check on a date:  
+  `dist\watch_roketto.exe --once --date 2026-02-02`
+- Watch a date range, evenings, Fridays only, with Windows toast + beep:  
+  `dist\watch_roketto.exe --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --toast --beep`
+
+#### Shortcut (double-click)
+1. Right-click `dist\watch_roketto.exe` → **Create shortcut**.  
+2. Right-click the shortcut → **Properties** → in **Target**, append your options, e.g.  
+   `"C:\Users\<you>\Downloads\roketto\dist\watch_roketto.exe" --once --date 2026-02-02`  
+3. Double-click the shortcut to run with those options.
+
+### 3) If `watch_roketto.exe` is missing (build it yourself)
+You only need to do this once; afterwards share the EXE with friends.
+```
+pip install pyinstaller
+pyinstaller --onefile watch_roketto.py
+```
+The file appears at `dist/watch_roketto.exe`.
+
+---
+## For Coders: Run from Source (conda or venv)
+
+### Clone / download
+```bash
+git clone <repo-url> roketto
+cd roketto
+# or download ZIP and unzip here
+```
+
+### Option A: conda
 ```bash
 conda create -n roketto-bot python=3.11 pip
 conda activate roketto-bot
 pip install -r requirements.txt
-```
-
-Single check:
-```bash
 python watch_roketto.py --once --date 2026-02-02
 ```
 
-Watch range with filters:
-```bash
-python watch_roketto.py \
-  --start-date 2026-02-10 --end-date 2026-02-20 \
-  --from-time 18:00 --to-time 22:00 \
-  --weekday fri --toast --beep
-```
-
-### Without conda (plain venv)
+### Option B: plain venv
 ```bash
 python -m venv .venv
 . .venv/Scripts/activate   # PowerShell: .\\.venv\\Scripts\\Activate.ps1
 pip install -r requirements.txt
+python watch_roketto.py --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri
 ```
 
-### Pack single EXE (Windows)
+### Option C: build EXE yourself
 ```bash
 pip install pyinstaller
 pyinstaller --onefile watch_roketto.py
-# exe at dist/watch_roketto.exe
 ```
-
-## Commands (English)
-- `--date YYYY-MM-DD` single day.
-- `--start-date ... --end-date ...` inclusive range (both required).
-- `--days-ahead N` default 7 when no dates.
-- Time: `--time HH:MM` exact; `--from-time`; `--to-time` (exclusive).
-- `--weekday mon|tue|wed|thu|fri|sat|sun`
-- `--interval` seconds (default 180) + `--jitter` (default 25).
-- Notifications: `--toast`, `--beep`, `--webhook-url https://...`
-- TZ: `--site-tz` (default Australia/Sydney); `--local-tz` for display.
-- `--once` run one pass.
-
-## How it works
-Seeds a session on the public page, fetches `/calendar-widget?date=YYYYMMDD`, parses `td.available` slots, filters, and notifies once per new slot.
-
-## Troubleshooting
-- “Expected session attribute 'BookingFormV1'”: session expired; auto‑reseed; if repeated, increase `--interval`.
-- No slots: loosen time filters; try `--once --date ...` without filters.
-- 403/blocked: lower frequency (e.g., 300–420s) keep jitter.
-- Toast/beep: Windows only; ensure `win10toast` installed.
-- Webhook silent: POST test with curl; some hooks need auth/fields.
-- Timezone: set `--local-tz America/Los_Angeles` if system TZ is off.
-- Repeats: dedupe per resource+date+start; restarting will re-announce.
-
-## Safe use
-Keep intervals generous (≥180s) with jitter, stop when not needed, avoid multiple high-frequency instances.
-
-## Examples
-- Evenings next 7 days:  
-  `python watch_roketto.py --days-ahead 7 --from-time 17:00 --to-time 22:00 --toast`
-- One-off before heading out:  
-  `python watch_roketto.py --once --date 2026-02-03 --from-time 18:00 --to-time 21:00`
 
 ---
-## 中文快速指南（不懂 conda 也能用）
+## 中文：下载与运行（零编程）
 
-1. 安装 Python 3.11（Windows 勾选 “Add Python to PATH”）。  
-2. 在项目目录打开 PowerShell 或 CMD：
-   ```bash
-   python -m venv .venv
-   .\\.venv\\Scripts\\activate      # PowerShell 可用 .\\.venv\\Scripts\\Activate.ps1
-   pip install -r requirements.txt
+### 1) 获取文件
+- 如果在 GitHub：点击绿色 **Code** → **Download ZIP**，解压到任意文件夹（如 `C:\Users\<你>\Downloads\roketto`）。
+- 已经有文件夹的话，直接打开即可。
+
+### 2) 运行独立程序
+1. 打开 `roketto` 里的 `dist` 文件夹。
+2. 双击 `watch_roketto.exe`，会弹出黑色窗口（正常现象）。
+3. 在窗口里输入命令并回车，例如：
    ```
-3. 试跑一次（单日、检查一次就退出）：
-   ```bash
-   python watch_roketto.py --once --date 2026-02-02
+   dist\watch_roketto.exe --once --date 2026-02-02
    ```
-4. 持续监听示例（2/10–2/20，周五晚 6–10 点，桌面弹窗+蜂鸣）：
-   ```bash
-   python watch_roketto.py ^
-     --start-date 2026-02-10 --end-date 2026-02-20 ^
-     --from-time 18:00 --to-time 22:00 ^
-     --weekday fri --toast --beep
-   ```
+4. 需要持续监听就让窗口保持打开，关闭窗口即停止。
 
-### 常用参数（中文速查）
-- 日期：`--date` 单日；或 `--start-date ... --end-date ...` 范围；未指定则 `--days-ahead` 默认 7 天。
-- 时间：`--time` 精确；`--from-time` 最早；`--to-time` 最晚（不含）。`--weekday` 限定星期几。
-- 频率：`--interval` 基础间隔（秒，默认 180），`--jitter` 抖动（默认 ±25）。
-- 通知：`--toast` 桌面弹窗；`--beep` 蜂鸣；`--webhook-url` 推送到 Slack/Discord 等。
-- 时区：`--site-tz` 场馆时区（默认 Australia/Sydney）；`--local-tz` 显示你的本地时间。
-- `--once` 只跑一遍。
+#### 常用示例
+- 单次查看某天：  
+  `dist\watch_roketto.exe --once --date 2026-02-02`
+- 2/10–2/20，周五晚 6–10 点监听，桌面弹窗+蜂鸣：  
+  `dist\watch_roketto.exe --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri --toast --beep`
 
-### 常见问题
-- **“Expected session attribute 'BookingFormV1'”**：会话过期，脚本会重建；频繁出现请增大 `--interval`。
-- **找不到场次**：先不用时间过滤跑一次确认解析正常。
-- **403/被怀疑机器人**：降低频率，增大间隔并保留抖动。
-- **Toast/Beep 无响应**：仅 Windows 支持，确保 `win10toast` 安装且在桌面会话内运行。
-- **Webhook 没消息**：用 curl 先测试；有些需要鉴权或特定字段。
-- **时区显示不对**：显式设置 `--local-tz`。
+#### 建立双击快捷方式
+1. 右键 `dist\watch_roketto.exe` → **Create shortcut**。  
+2. 右键快捷方式 → **属性** → 在 “目标” 后加上参数，例如  
+   `"C:\Users\<你>\Downloads\roketto\dist\watch_roketto.exe" --once --date 2026-02-02`  
+3. 双击快捷方式即可按预设参数运行。
 
-### 打包成单文件 EXE
+### 3) 没有 EXE 时自行打包（只做一次）
+```
+pip install pyinstaller
+pyinstaller --onefile watch_roketto.py
+```
+生成的文件在 `dist\watch_roketto.exe`，可直接分享给朋友。
+
+---
+## 给开发者：源代码运行（conda 或 venv）
+
+### 获取代码
+```bash
+git clone <repo-url> roketto
+cd roketto
+# 或下载 ZIP 解压
+```
+
+### 方案 A：conda
+```bash
+conda create -n roketto-bot python=3.11 pip
+conda activate roketto-bot
+pip install -r requirements.txt
+python watch_roketto.py --once --date 2026-02-02
+```
+
+### 方案 B：原生 venv
+```bash
+python -m venv .venv
+. .venv/Scripts/activate   # PowerShell: .\\.venv\\Scripts\\Activate.ps1
+pip install -r requirements.txt
+python watch_roketto.py --start-date 2026-02-10 --end-date 2026-02-20 --from-time 18:00 --to-time 22:00 --weekday fri
+```
+
+### 方案 C：自行打包 EXE
 ```bash
 pip install pyinstaller
 pyinstaller --onefile watch_roketto.py
-# 生成 dist/watch_roketto.exe，可直接双击或命令行运行
 ```
 
-保持较长间隔、开启抖动，避免对站点造成压力。祝你顺利抢到场地！
+---
+## Quick Option Hints
+- `--date YYYY-MM-DD` 单日 / single day.
+- `--start-date ... --end-date ...` 日期范围（必须成对）。
+- `--from-time HH:MM` 最早；`--to-time HH:MM` 最晚（不含）；`--weekday fri` 限定周五。
+- `--toast` Windows 弹窗；`--beep` 蜂鸣；`--webhook-url https://...` 推送到 Slack/Discord。
+- 默认每 180 秒查询一次并带抖动，避免对网站造成压力。
+
+If something looks wrong, increase `--interval` (e.g., 300–420), keep `--jitter` on, and try a single check with `--once` to confirm it works. Happy hitting!
